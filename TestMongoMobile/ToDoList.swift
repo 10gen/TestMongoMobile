@@ -1,15 +1,20 @@
 
 import MongoMobile
 
-let globalToDoList = try! ToDoList()
+let globalToDoList = ToDoList()
 
 class ToDoList {
     var client: MongoClient
     
-    init() throws {
-        MongoMobile.initialize()
-        let settings = MongoClientSettings(dbPath: "test-mongo-mobile")
-        self.client = try MongoMobile.create(settings)
+    init() {
+        do {
+            MongoMobile.initialize()
+            let documentPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].path
+            let settings = MongoClientSettings(dbPath: documentPath.stringByAppendingPathComponent("test-mongo-mobile"))
+            self.client = try MongoMobile.create(settings)
+        } catch {
+            print("ToDoList initialization error: \(error)")
+        }
     }
     
     deinit {
