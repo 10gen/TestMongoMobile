@@ -4,14 +4,25 @@ import MongoMobile
 let globalToDoList = ToDoList()
 
 class ToDoList {
-    var client: MongoClient
+    var _client: MongoClient?
     
     init() {
         do {
+            // determine dbPath
+            let documentPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let databasePath = documentPath.appendingPathComponent("test-mongo-mobile")
+
+            // create path if it doesn't exist
+            do {
+                try FileManager.default.createDirectory(at: databasePath, withIntermediateDirectories: false)
+            } catch {
+                print("couldn't create database path: \(error)");
+            }
+            
+            // initialize
             MongoMobile.initialize()
-            let documentPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].path
-            let settings = MongoClientSettings(dbPath: documentPath.stringByAppendingPathComponent("test-mongo-mobile"))
-            self.client = try MongoMobile.create(settings)
+            let settings = MongoClientSettings(dbPath: databasePath.path)
+            self._client = try MongoMobile.create(settings)
         } catch {
             print("ToDoList initialization error: \(error)")
         }
@@ -22,11 +33,20 @@ class ToDoList {
     }
     
     func allTasks() throws -> [ToDoListItem] {
+        guard let client = _client else {
+            return []
+        }
+        
         let docs = try client.db("todo_app").collection("tasks").find()
         return try docs.map { try ToDoListItem(withDocument: $0) }
     }
     
     func save(todo: ToDoListItem) throws {
+        guard let client = self._client else {
+            print("no client available")
+            return
+        }
+        
         let todoAsDocument: Document = [
             "name": todo.name,
             "completed": todo.completed
