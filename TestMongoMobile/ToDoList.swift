@@ -20,7 +20,7 @@ class ToDoList {
             }
             
             // initialize
-            MongoMobile.initialize()
+            try MongoMobile.initialize()
             let settings = MongoClientSettings(dbPath: databasePath.path)
             self._client = try MongoMobile.create(settings)
         } catch {
@@ -29,7 +29,11 @@ class ToDoList {
     }
     
     deinit {
-        MongoMobile.close()
+        do {
+            try MongoMobile.close()
+        } catch {
+            print("Error closing MongoMobile: \(error)")
+        }
     }
     
     func allTasks() throws -> [ToDoListItem] {
